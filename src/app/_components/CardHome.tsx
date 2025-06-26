@@ -16,13 +16,11 @@ import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import FallbackImage from "./FallbackImage";
 
-// Type untuk chapter
 type ChapterData = {
   title: string;
   url: string;
 };
 
-// Type untuk volume
 type VolumeData = {
   saga: string;
   volume: string;
@@ -31,7 +29,6 @@ type VolumeData = {
   chapters: ChapterData[];
 };
 
-// Type untuk response dari API
 export type VolumeDataResponse = {
   success: boolean;
   page: number;
@@ -49,8 +46,15 @@ export default function CardHome() {
 
   const { data, error, isLoading } = useSWR<VolumeDataResponse>(
     `/api/home?page=${page}`,
-    fetcher
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 0,
+      dedupingInterval: Infinity,
+    }
   );
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -89,15 +93,9 @@ export default function CardHome() {
 
   return (
     <div className="space-y-6">
-      {/* Header dengan informasi pagination */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">One Piece Digital Colored</h2>
-          <p className="text-muted-foreground">
-            Menampilkan {data.data.length} dari {data.total} volume
-          </p>
-        </div>
-      </div>
+      <p className="text-muted-foreground text-center">
+        Menampilkan {data.data.length} dari {data.total} volume
+      </p>
 
       {/* Grid cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

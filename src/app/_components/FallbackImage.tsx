@@ -22,7 +22,6 @@ export default function FallbackImage({
     }
   }, [src]);
 
-  // Jangan render jika src kosong/null
   if (!imgSrc) return null;
 
   return (

@@ -48,7 +48,7 @@ const OptimizedImage = ({ src, alt, index }: OptimizedImageProps) => {
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300">
           <div className="text-center text-gray-500">
             <div className="mb-2 text-xl">⚠️</div>
-            <div className="text-sm">Failed to load image</div>
+            <div className="text-sm">try refresh page</div>
             <div className="text-xs mt-1">Image {index + 1}</div>
           </div>
         </div>

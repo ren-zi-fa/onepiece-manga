@@ -7,7 +7,9 @@ export const metadata: Metadata = {
 };
 export default function Home() {
   return (
-    <Suspense fallback={<div className="p-6 text-center">Memuat halaman...</div>}>
+    <Suspense
+      fallback={<div className="p-6 text-center">Memuat halaman...</div>}
+    >
       <CardHome />
     </Suspense>
   );

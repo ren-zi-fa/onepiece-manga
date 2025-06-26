@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import ReadManga from "@/app/_components/ReadManga";
+import Link from "next/link";
 
 export async function generateMetadata({
   params,
@@ -23,5 +24,12 @@ export default async function ReadPage({
   params: Promise<{ slug: string }>;
 }) {
   const slug = (await params).slug;
-  return <ReadManga slug={slug} />;
+  return (
+    <>
+      <Link href="/" className="underline flex justify-center">
+        All Chapter
+      </Link>
+      <ReadManga slug={slug} />
+    </>
+  );
 }

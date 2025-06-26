@@ -7,7 +7,9 @@ import OptimizedImage from "./OptimizeManga";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { FixedSizeList as List } from "react-window";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
+import { MangaPageItem } from "./pageItem";
+import { useIntersectionObserver } from "@/hooks/intersection";
 
 export type ImageType = "comic" | "ads";
 
@@ -23,134 +25,38 @@ export interface ImageExtractionResponse {
   data: ExtractedImage[];
 }
 
-// Komponen item untuk virtual list
-const MangaPageItem = ({ 
-  index, 
-  style, 
-  data 
-}: { 
-  index: number; 
-  style: React.CSSProperties; 
-  data: { 
-    images: ExtractedImage[]; 
-    slug: string;
-    onPageView: (pageNumber: number) => void;
-  };
-}) => {
-  const { images, slug, onPageView } = data;
-  const img = images[index];
-
-  // Trigger callback ketika item terlihat
-  useEffect(() => {
-    onPageView(index + 1);
-  }, [index, onPageView]);
-
-  if (!img) return null;
-
-  return (
-    <div style={style} className="px-4">
-      <div className="w-full mb-4">
-        <OptimizedImage
-          src={img.imageUrl}
-          alt={img.alt || `Manga page ${index + 1}`}
-          index={index}
-        />
-        
-        {/* Page number indicator */}
-        <div className="text-center mt-2">
-          <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-            Page {index + 1} / {images.length}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Hook untuk intersection observer (alternatif untuk react-window)
-const useIntersectionObserver = () => {
-  const [visiblePages, setVisiblePages] = useState<Set<number>>(new Set());
-  
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const observedElements = useRef<Map<number, Element>>(new Map());
-
-  const observe = useCallback((element: Element, pageNumber: number) => {
-    if (!observerRef.current) {
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            const pageNum = parseInt(entry.target.getAttribute('data-page') || '0');
-            if (entry.isIntersecting) {
-              setVisiblePages(prev => new Set(prev).add(pageNum));
-            } else {
-              setVisiblePages(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(pageNum);
-                return newSet;
-              });
-            }
-          });
-        },
-        {
-          threshold: 0.1,
-          rootMargin: '100px 0px'
-        }
-      );
-    }
-
-    element.setAttribute('data-page', pageNumber.toString());
-    observerRef.current.observe(element);
-    observedElements.current.set(pageNumber, element);
-  }, []);
-
-  const unobserve = useCallback((pageNumber: number) => {
-    const element = observedElements.current.get(pageNumber);
-    if (element && observerRef.current) {
-      observerRef.current.unobserve(element);
-      observedElements.current.delete(pageNumber);
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, []);
-
-  return { visiblePages, observe, unobserve };
-};
-
-// Komponen dengan Intersection Observer (Alternatif tanpa react-window)
-const IntersectionObserverMangaReader = ({ 
-  comicImages, 
-  slug 
-}: { 
-  comicImages: ExtractedImage[]; 
-  slug: string; 
+const IntersectionObserverMangaReader = ({
+  comicImages,
+  slug,
+}: {
+  comicImages: ExtractedImage[];
+  slug: string;
 }) => {
   const { visiblePages, observe } = useIntersectionObserver();
   const [currentPage, setCurrentPage] = useState(1);
 
-  const handleRef = useCallback((element: HTMLDivElement | null, index: number) => {
-    if (element) {
-      observe(element, index + 1);
-    }
-  }, [observe]);
+  const handleRef = useCallback(
+    (element: HTMLDivElement | null, index: number) => {
+      if (element) {
+        observe(element, index + 1);
+      }
+    },
+    [observe]
+  );
 
   return (
     <div className="flex flex-col">
       {/* Current page indicator */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b p-2 text-center">
         <span className="text-sm font-medium">
-          Reading: Page {Math.max(...Array.from(visiblePages), 0) || 1} / {comicImages.length}
+          Reading: Page {Math.max(...Array.from(visiblePages), 0) || 1} /{" "}
+          {comicImages.length}
         </span>
       </div>
 
       {comicImages.map((img, idx) => (
-        <div 
-          key={`${slug}-${idx}`} 
+        <div
+          key={`${slug}-${idx}`}
           ref={(el) => handleRef(el, idx)}
           className="w-full min-h-[400px]"
         >
@@ -165,21 +71,18 @@ const IntersectionObserverMangaReader = ({
               <div className="text-gray-400">Loading page {idx + 1}...</div>
             </div>
           )}
-          
-        
         </div>
       ))}
     </div>
   );
 };
 
-// Komponen dengan React Window
-const VirtualizedMangaReader = ({ 
-  comicImages, 
-  slug 
-}: { 
-  comicImages: ExtractedImage[]; 
-  slug: string; 
+const VirtualizedMangaReader = ({
+  comicImages,
+  slug,
+}: {
+  comicImages: ExtractedImage[];
+  slug: string;
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const listRef = useRef<List>(null);
@@ -191,7 +94,7 @@ const VirtualizedMangaReader = ({
   const itemData = {
     images: comicImages,
     slug,
-    onPageView: handlePageView
+    onPageView: handlePageView,
   };
 
   // Scroll to specific page
@@ -218,7 +121,9 @@ const VirtualizedMangaReader = ({
               Previous
             </button>
             <button
-              onClick={() => scrollToPage(Math.min(comicImages.length, currentPage + 1))}
+              onClick={() =>
+                scrollToPage(Math.min(comicImages.length, currentPage + 1))
+              }
               disabled={currentPage >= comicImages.length}
               className="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300"
             >
@@ -230,9 +135,9 @@ const VirtualizedMangaReader = ({
 
       <List
         ref={listRef}
-        height={800} // Adjust based on your layout
+        height={800}
         itemCount={comicImages.length}
-        itemSize={500} // Height per item (image + padding)
+        itemSize={500}
         itemData={itemData}
         width="100%"
       >
@@ -356,12 +261,32 @@ export default function ReadManga({ slug }: { slug: string }) {
       {useVirtualization ? (
         <VirtualizedMangaReader comicImages={comicImages} slug={slug} />
       ) : (
-        <IntersectionObserverMangaReader comicImages={comicImages} slug={slug} />
+        <IntersectionObserverMangaReader
+          comicImages={comicImages}
+          slug={slug}
+        />
       )}
 
       {/* Footer info */}
       <div className="mt-8 text-center text-gray-500 text-sm">
         <p>End of chapter</p>
+      </div>
+      <div className="flex justify-between mb-4 items-center">
+        <Link
+          href={`/read/${prevSlug}`}
+          className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Previous
+        </Link>
+
+        <Link
+          href={`/read/${nextSlug}`}
+          className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+        >
+          Next
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
     </div>
   );
