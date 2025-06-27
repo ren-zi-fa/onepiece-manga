@@ -1,7 +1,5 @@
 "use client";
 
-import useSWR from "swr";
-import { fetcher } from "@/lib/utils";
 import Link from "next/link";
 
 import {
@@ -15,45 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import FallbackImage from "./FallbackImage";
-
-type ChapterData = {
-  title: string;
-  url: string;
-};
-
-type VolumeData = {
-  saga: string;
-  volume: string;
-  coverImage: string;
-  arc: string;
-  chapters: ChapterData[];
-};
-
-export type VolumeDataResponse = {
-  success: boolean;
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  nextPage: number | null;
-  prevPage: number | null;
-  data: VolumeData[];
-};
+import { useVolume } from "@/hooks/useVolume";
 
 export default function CardHome() {
   const searchParams = useSearchParams();
   const page = searchParams.get("page") || "1";
 
-  const { data, error, isLoading } = useSWR<VolumeDataResponse>(
-    `/api/home?page=${page}`,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      refreshInterval: 0,
-      dedupingInterval: Infinity,
-    }
-  );
+  const { data, error, isLoading } = useVolume(page);
 
   if (isLoading) {
     return (
